@@ -48,14 +48,24 @@ server.post("/participants", async (req,res) => {
         res.status(500).send("Deu algo errado no servidor")
     }
 
+    //necessario validar status 422 (name nao vazio) - joi
+    //salvar a mensagem no formato acima usar dayjs
+
+
 })
 
-server.get("/participants", (req,res) => {
-
+server.get("/participants", async (req,res) => {
+  const participants = await db.collection("participants").find().toArray();
+  return res.send(participants);
+  // requisito get participants ok
 })
 
 server.post("/messages", (req,res) => {
-
+    const { to, text, type } = req.body // rece
+    console.log(to);
+    console.log(text);
+    console.log(type);
+   
 })
 
 server.get("/messages", (req,res) => {
