@@ -67,10 +67,20 @@ server.get("/participants", async (req,res) => {
 
 server.post("/messages", (req,res) => {
     const { to, text, type } = req.body // recebe os parametros no body da request
+    const from = req.headers.user // recebe os parametros do front (headers)
     console.log(to);
     console.log(text);
     console.log(type);
-   res.send("ok")
+    console.log(from);
+
+    try{
+        db.collection("messages").insertOne({ from, to, text, type, time:hour}) // salvar time no formato requerido usando dayjs
+        res.status(201).send("mensagem ok") // retornar status 201, tirar msg
+        console.log(hour)
+    } catch (err) {
+        res.status(500).send("erro na msg")
+    }
+  //falta validar via joi status 422
 })
 
 server.get("/messages", (req,res) => {
