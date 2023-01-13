@@ -13,9 +13,7 @@ server.use(cors())
 const mongoClient = new MongoClient(process.env.DATABASE_URL)
 let db; // armazena variavel para usar conexoes do mongoClient
 const PORT = 5000;  
-
-
-// let hour = dayjs().format("HH:mm:ss")
+let hour = dayjs().format("HH:mm:ss")
 
 //formato participante
 //{name: 'João', lastStatus: 12313123} // O conteúdo do lastStatus será explicado nos próximos requisitos
@@ -42,6 +40,13 @@ server.post("/participants", async (req,res) => {
         if (userExist) return res.status(409).send("Este usuário já existe") //impedir cadastro de usuario ja existente
 
         await db.collection("participants").insertOne({name: name, lastStatus: Date.now()}) // salvar na coleção participants
+        await db.collection("messages").insertOne({
+            from: name,
+            to: "Todos",
+            text: "entra na sala...",
+            type: "status",
+            time: hour
+        })
         res.status(201).send("ok") //retornar status 201 pode retirar esse send ok 
     } catch (err) {
         console.log(err)
@@ -61,11 +66,11 @@ server.get("/participants", async (req,res) => {
 })
 
 server.post("/messages", (req,res) => {
-    const { to, text, type } = req.body // rece
+    const { to, text, type } = req.body // recebe os parametros no body da request
     console.log(to);
     console.log(text);
     console.log(type);
-   
+   res.send("ok")
 })
 
 server.get("/messages", (req,res) => {
@@ -75,6 +80,12 @@ server.get("/messages", (req,res) => {
 server.post("/status", (req,res) => {
 
 })
+
+
+// function removeUser(){
+
+// } // requisito remover usuário inativo lastStatus mais que 10 segundos atrás;
+
 
 server.listen(PORT, () => {
     console.log(`Server running on ${PORT}`)
