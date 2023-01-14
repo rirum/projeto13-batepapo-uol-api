@@ -112,13 +112,18 @@ server.post("/messages", async (req,res) => {
 
 server.get("/messages", async (req,res) => {
     const limit = parseInt(req.query.limit)
+    // const { user } = req.headers
     try{
         const message = await db.collection("messages").find().toArray();
+        // const filterMsg = message.filter(message => 
+        //     message.type !== "private_message" ||
+        //      (message.type === "private_message" && (message.to === user || message.to === "Todos" || message.from === user)));
         if (!limit) return res.send(message.reverse());
         res.send(message.slice(-limit).reverse());
     }catch(err){
         res.status(500).send("erro no get msg");
     }
+    //falta mensagens privadas e mensagens para todos
 })
 
 server.post("/status", async (req,res) => {
