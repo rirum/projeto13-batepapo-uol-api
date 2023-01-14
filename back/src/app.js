@@ -1,7 +1,7 @@
 import express from "express"
 import cors from "cors"
 import dotenv from 'dotenv'
-import { MongoClient } from 'mongodb'
+import { MongoClient, ReturnDocument } from 'mongodb'
 import dayjs from 'dayjs'
 import joi from 'joi'
 
@@ -111,30 +111,20 @@ server.post("/messages", async (req,res) => {
 })
 
 server.get("/messages", async (req,res) => {
+    const limit = parseInt(req.query.limit)
     try{
-        const query = req.query;
-        // const { user } = req.headers;
-        const participant = await db.collection("participants").find({name: req.headers.user})
-        // const typeMsg = {
-        //     $or: [ {type: "status"}, {type: "message"}, {type: "private_message", from: participant.name}, { type: "private_message", from: participant.name}]
-        // }
-        
-        // const limitMsg = parseInt(req.query.limit) //query string limit
-        const message = await db.collection("message").find().toArray(); //retorna a msg
-        // if(limitMsg) {
-        //     return res.send(message.slice(-limitMsg).reverse());
-        // }
-
-        return res.send(message);
-    } catch (err) {
-        console.log(err)
-    res.status(500).send("erro no get das msgs")
+        const message = await db.collection("messages").find().toArray();
+        if (!limit) return res.send(message.reverse());
+        res.send(message.slice(-limit).reverse());
+    }catch(err){
+        res.status(500).send("erro no get msg");
     }
 })
 
 server.post("/status", async (req,res) => {
+    const user = req.headers.user; // recebe requisição user
     try{
-        const user = req.headers.user; // recebe requisição user
+        
         const participantIsOnline = await db.collection("participants").findOne({ name:user })
         if (!participantIsOnline) return res.status(404).send("Esse usuário não existe!")
     } catch(err) {
@@ -144,10 +134,28 @@ server.post("/status", async (req,res) => {
 
 
 function removeUser(){
+    setInterval(async () => {
 
+        const lastStatusLoggedOff = Date.now() - 10000 //milissegundos
+        const usersLogged = await db.collection("participants").find().toArray()
+
+        usersLogged.forEach(async i =>{
+            if (i.lastStatus < lastStatusLoggedOff){
+                await db.collection("participants").deleteOne({name: i.name})
+                
+                await db.collection("messages").insertOne({
+                    from: i.name,
+                    to: 'Todos',
+                    text: 'sai da sala...',
+                    type:'status',
+                    time: hour
+                })
+            }
+        })
+    }, 15000)
 } // requisito remover usuário inativo lastStatus mais que 10 segundos atrás;
 
-
+removeUser()
 server.listen(PORT, () => {
     console.log(`Server running on ${PORT}`)
 })
