@@ -133,8 +133,10 @@ server.post("/status", async (req,res) => {
     const user = req.headers.user; // recebe requisição user
     try{
         
-        const participantIsOnline = await db.collection("participants").findOne({ name:user })
-        if (!participantIsOnline) return res.status(404).send("Esse usuário não existe!")
+        const participant = await db.collection("participants").findOne({ name:user })
+        if (!participant) return res.status(404).send("Esse usuário não existe!")
+        await db.collection("participants").updateOne({ name:user }, { $set: {lastStatus: Date.now() }})
+        res.sendStatus(200)
     } catch(err) {
         return res.status(500).send("erro no post status")
     }
@@ -144,7 +146,7 @@ server.post("/status", async (req,res) => {
 function removeUser(){
     setInterval(async () => {
 
-        const lastStatusLoggedOff = Date.now() - 10000 //milissegundos
+        const lastStatusLoggedOff = Date.now() - 10000 
         const usersLogged = await db.collection("participants").find().toArray()
 
         usersLogged.forEach(async i =>{
