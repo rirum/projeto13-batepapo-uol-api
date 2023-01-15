@@ -1,7 +1,7 @@
 import express from "express"
 import cors from "cors"
 import dotenv from 'dotenv'
-import { MongoClient, ReturnDocument } from 'mongodb'
+import { MongoClient } from 'mongodb'
 import dayjs from 'dayjs'
 import joi from 'joi'
 
@@ -46,8 +46,6 @@ const messageSchema = joi.object({
 //// inicio http verbs
 server.post("/participants", async (req,res) => {
     const { name } = req.body //recebe parametro name a ser cadastrado
-    console.log(name);
-
     const userValidate = userSchema.validate({name}) //validaçao 422
     if (userValidate.error){
         return res.sendStatus(422)
@@ -70,11 +68,6 @@ server.post("/participants", async (req,res) => {
         console.log(err)
         res.status(500).send("Deu algo errado no servidor")
     }
-
-
- 
-
-
 })
 
 server.get("/participants", async (req,res) => {
@@ -86,10 +79,7 @@ server.get("/participants", async (req,res) => {
 server.post("/messages", async (req,res) => {
     const { to, text, type } = req.body // recebe os parametros no body da request
     const from  = req.headers.user // recebe os parametros do front (headers)
-    console.log(to);
-    console.log(text);
-    console.log(type);
-    console.log(from);
+    
     const messageValidate = messageSchema.validate({to, text, type})
 
     if(messageValidate.error){
@@ -103,7 +93,7 @@ server.post("/messages", async (req,res) => {
     try{
         db.collection("messages").insertOne({ from, to, text, type, time:hour}) // salvar time no formato requerido usando dayjs
         res.status(201).send("mensagem ok") // retornar status 201, tirar msg
-        console.log(hour)
+        
     } catch (err) {
         res.status(500).send("erro na msg")
     }
@@ -112,18 +102,31 @@ server.post("/messages", async (req,res) => {
 
 server.get("/messages", async (req,res) => {
     const limit = parseInt(req.query.limit)
-    // const { user } = req.headers
+    const user  = req.headers.user
     try{
-        const message = await db.collection("messages").find().toArray();
-        // const filterMsg = message.filter(message => 
-        //     message.type !== "private_message" ||
-        //      (message.type === "private_message" && (message.to === user || message.to === "Todos" || message.from === user)));
-        if (!limit) return res.send(message.reverse());
-        res.send(message.slice(-limit).reverse());
+
+        if (!user) return res.sendStatus(422)
+        let registredUser = await db.collection("participants").findOne({name:user})
+        if (!registredUser) return res.sendStatus(422)
+        const messages = await db.collection("messages").find().toArray();
+        
+        let result = [];
+
+        for (let i = 0; i < messages.length; i++){
+            if (messages[i].type === 'message'){
+                result.push(messages[i])
+            }
+            if(messages[i].type === 'private_message' && messages[i].to === user){
+                result.push(messages[i])
+            }
+        }
+
+        if (!limit) return res.send(result.reverse());
+        res.send(result.slice(-limit).reverse());
     }catch(err){
         res.status(500).send("erro no get msg");
     }
-    //falta mensagens privadas e mensagens para todos
+   
 })
 
 server.post("/status", async (req,res) => {
