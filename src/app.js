@@ -101,38 +101,37 @@ server.post("/messages", async (req,res) => {
 })
 
 server.get("/messages", async (req,res) => {
-    const limit = parseInt(req.query.limit)
+    
     const user  = req.headers.user
-    let messages;
+    let limit = 100;
+
+  if (req.query.limit) {
+    limit = parseInt(req.query.limit);
+  }
+
+
+  if (limit < 1 || isNaN(limit)) {
+    return res.status(422).send("Invalid limit!");
+  }
 
     try{
 
-        if (limit < 1 || isNaN(limit)){
-            return res.status(422).send("Limit inválido")
-        }
 
         if (!user) return res.sendStatus(422)
         let registredUser = await db.collection("participants").findOne({name:user})
         if (!registredUser) return res.sendStatus(422)
-        messages = await db.collection("messages").find({
-            $or: [
-                {to:user},
-                {from:user},
-                {to: "Todos"},
-                {type:"message"},
-            ]
-        }).toArray();
+        const messages = await db.collection("messages").find().toArray();
         
-        // let result = [];
+        let result = [];
 
-        // for (let i = 0; i < messages.length; i++){
-        //     if (messages[i].type === 'message'){
-        //         result.push(messages[i])
-        //     }
-        //     if(messages[i].type === 'private_message' && messages[i].to === user){
-        //         result.push(messages[i])
-        //     }
-        // }
+        for (let i = 0; i < messages.length; i++){
+            if (messages[i].type === 'message' || messages[i].type === 'status' ){
+                result.push(messages[i])
+            }
+            if(messages[i].type === 'private_message' && messages[i].to === user){
+                result.push(messages[i])
+            }
+        }
 
         if (!limit) return res.send(result.reverse());
         res.send(result.slice(-limit).reverse());
@@ -178,7 +177,7 @@ function removeUser(){
     }, 15000)
 } // requisito remover usuário inativo lastStatus mais que 10 segundos atrás;
 
-removeUser()
+// removeUser()
 server.listen(PORT, () => {
     console.log(`Server running on ${PORT}`)
 })
