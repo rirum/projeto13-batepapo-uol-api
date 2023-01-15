@@ -106,24 +106,33 @@ server.get("/messages", async (req,res) => {
     let messages;
 
     try{
+
         if (limit < 1 || isNaN(limit)){
             return res.status(422).send("Limit inválido")
         }
+
         if (!user) return res.sendStatus(422)
         let registredUser = await db.collection("participants").findOne({name:user})
         if (!registredUser) return res.sendStatus(422)
-        const messages = await db.collection("messages").find().toArray();
+        messages = await db.collection("messages").find({
+            $or: [
+                {to:user},
+                {from:user},
+                {to: "Todos"},
+                {type:"message"},
+            ]
+        }).toArray();
         
-        let result = [];
+        // let result = [];
 
-        for (let i = 0; i < messages.length; i++){
-            if (messages[i].type === 'message'){
-                result.push(messages[i])
-            }
-            if(messages[i].type === 'private_message' && messages[i].to === user){
-                result.push(messages[i])
-            }
-        }
+        // for (let i = 0; i < messages.length; i++){
+        //     if (messages[i].type === 'message'){
+        //         result.push(messages[i])
+        //     }
+        //     if(messages[i].type === 'private_message' && messages[i].to === user){
+        //         result.push(messages[i])
+        //     }
+        // }
 
         if (!limit) return res.send(result.reverse());
         res.send(result.slice(-limit).reverse());
