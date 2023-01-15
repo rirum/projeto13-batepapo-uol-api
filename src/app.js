@@ -103,8 +103,12 @@ server.post("/messages", async (req,res) => {
 server.get("/messages", async (req,res) => {
     const limit = parseInt(req.query.limit)
     const user  = req.headers.user
-    try{
+    let messages;
 
+    try{
+        if (limit < 1 || isNaN(limit)){
+            return res.status(422).send("Limit inválido")
+        }
         if (!user) return res.sendStatus(422)
         let registredUser = await db.collection("participants").findOne({name:user})
         if (!registredUser) return res.sendStatus(422)
