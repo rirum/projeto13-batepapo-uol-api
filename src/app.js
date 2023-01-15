@@ -81,6 +81,8 @@ server.post("/messages", async (req,res) => {
     const from  = req.headers.user // recebe os parametros do front (headers)
     
     const messageValidate = messageSchema.validate({to, text, type})
+    
+    if (!from) return res.sendStatus(422)
 
     if(messageValidate.error){
         return res.sendStatus(422)
@@ -128,7 +130,7 @@ server.get("/messages", async (req,res) => {
             if (messages[i].type === 'message' || messages[i].type === 'status' ){
                 result.push(messages[i])
             }
-            if(messages[i].type === 'private_message' && messages[i].to === user){
+            if(messages[i].type === 'private_message' && (messages[i].to === user || messages[i].from === user)){
                 result.push(messages[i])
             }
         }
@@ -177,7 +179,7 @@ function removeUser(){
     }, 15000)
 } // requisito remover usuário inativo lastStatus mais que 10 segundos atrás;
 
-// removeUser()
+removeUser()
 server.listen(PORT, () => {
     console.log(`Server running on ${PORT}`)
 })
